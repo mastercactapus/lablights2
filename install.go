@@ -38,8 +38,8 @@ func install(prefix string, reset bool) error {
 	defer src.Close()
 
 	binPath := filepath.Join(prefix, "usr/bin/lablights2")
-	os.MkdirAll(filepath.Dir(dstPath), 0755)
-	dst, err := os.OpenFile(dstPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
+	os.MkdirAll(filepath.Dir(binPath), 0755)
+	dst, err := os.OpenFile(binPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
 	if err != nil {
 		return err
 	}
