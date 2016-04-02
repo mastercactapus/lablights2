@@ -24,14 +24,18 @@ type State struct {
 }
 
 type Config struct {
-	Switch     []Switch
-	Light      []Light
-	Action     []Action
-	DebounceMs int64
+	Switch         []Switch
+	Light          []Light
+	Action         []Action
+	DebounceMs     int64
+	PollIntervalMs int64
 }
 
 func (c *Config) Debounce() time.Duration {
 	return time.Duration(c.DebounceMs) * time.Millisecond
+}
+func (c *Config) PollInterval() time.Duration {
+	return time.Duration(c.PollIntervalMs) * time.Millisecond
 }
 
 func (c *Config) loop() {
@@ -45,7 +49,7 @@ func (c *Config) loop() {
 		c.SetLight(l.Name, false)
 	}
 
-	t := time.NewTicker(time.Millisecond * 5)
+	t := time.NewTicker(c.PollInterval())
 
 	var n time.Time
 

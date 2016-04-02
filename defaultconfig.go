@@ -1,12 +1,14 @@
 package main
 
-const DefaultDebounceMs = 25
+const DefaultDebounceMs = 60
+const DefaultPollIntervalMs = 25
 
 const configFile = `
 # NOTE: Pins are in reference to physical pin numbers
 
 # Debounce will ignore subsequent button state changes for a duration
-DebounceMs = 25
+DebounceMs = 60
+PollIntervalMs = 25
 
 [[Switch]]
 	Name = "SW1"

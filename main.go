@@ -64,9 +64,6 @@ func (c Config) Validate() {
 	if c.Switch == nil {
 		log.Fatalln("no switches configured, aborting")
 	}
-	if c.DebounceMs == 0 {
-		c.DebounceMs = DefaultDebounceMs
-	}
 
 	// check that IDs exist
 	lights := make(map[string]bool, len(c.Light))
@@ -116,6 +113,13 @@ func runLights(cmd *cobra.Command, args []string) {
 		log.Fatalln("load config:", err)
 	}
 	c.Validate()
+
+	if c.DebounceMs == 0 {
+		c.DebounceMs = DefaultDebounceMs
+	}
+	if c.PollIntervalMs == 0 {
+		c.PollIntervalMs = DefaultPollIntervalMs
+	}
 
 	c.loop()
 }
