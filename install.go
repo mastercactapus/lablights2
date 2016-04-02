@@ -14,7 +14,7 @@ const serviceFile = `
 Description=LED Lighting Controller
 
 [Service]
-ExecStart={{.Prefix}}/bin/lablights2 -c {{ .ConfigFile }}
+ExecStart={{.BinPath}} run -c {{ .ConfigFile }}
 
 [Install]
 WantedBy=multi-user.target
@@ -37,7 +37,7 @@ func install(prefix string, reset bool) error {
 	}
 	defer src.Close()
 
-	dstPath := filepath.Join(prefix, "usr/bin/lablights2")
+	binPath := filepath.Join(prefix, "usr/bin/lablights2")
 	os.MkdirAll(filepath.Dir(dstPath), 0755)
 	dst, err := os.OpenFile(dstPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
 	if err != nil {
@@ -52,7 +52,7 @@ func install(prefix string, reset bool) error {
 	src.Close()
 	dst.Close()
 
-	dstPath = filepath.Join(prefix, "usr/lib/systemd/system/lablights2.service")
+	dstPath := filepath.Join(prefix, "usr/lib/systemd/system/lablights2.service")
 	os.MkdirAll(filepath.Dir(dstPath), 0755)
 	dst, err = os.OpenFile(dstPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
@@ -60,7 +60,7 @@ func install(prefix string, reset bool) error {
 	}
 	defer dst.Close()
 
-	err = serviceTmpl.Execute(dst, struct{ Prefix, ConfigFile string }{prefix, configPath})
+	err = serviceTmpl.Execute(dst, struct{ BinPath, ConfigFile string }{binPath, configPath})
 	if err != nil {
 		return err
 	}
