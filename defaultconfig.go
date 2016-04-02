@@ -37,42 +37,42 @@ DebounceMs = 25
 	LightsToggle = ["LED1"]
 	[[Action.Match]]
 		SwitchesPressed = [ "SW1" ]
-		MinDurationMs = 1000
+		MinDurationMs = 300
 [[Action]]
 	# toggle LED2 if SW2 was pressed for > 1s
 	LightsToggle = ["LED2"]
 	[[Action.Match]]
 		SwitchesPressed = [ "SW2" ]
-		MinDurationMs = 1000
+		MinDurationMs = 300
 [[Action]]
 	# turn off both LED1 and LED2 if either SW1 or SW2 was pressed < 1s and either LED1 or LED2 are on
 	LightsOff = ["LED1", "LED2"]
 	[[Action.Match]]
 		SwitchesPressed = [ "SW1" ]
-		MaxDurationMs = 1000
+		MaxDurationMs = 300
 		LightsOn = ["LED1"]
 	[[Action.Match]]
 		SwitchesPressed = [ "SW1" ]
-		MaxDurationMs = 1000
+		MaxDurationMs = 300
 		LightsOn = ["LED2"]
 	[[Action.Match]]
 		SwitchesPressed = [ "SW2" ]
-		MaxDurationMs = 1000
+		MaxDurationMs = 300
 		LightsOn = ["LED1"]
 	[[Action.Match]]
 		SwitchesPressed = [ "SW2" ]
-		MaxDurationMs = 1000
+		MaxDurationMs = 300
 		LightsOn = ["LED2"]
 [[Action]]
 	# turn on both LED1 and LED2 if either SW1 or SW2 was pressed < 1s and both LED1 or LED2 are off
 	LightsOn = ["LED1", "LED2"]
 	[[Action.Match]]
 		SwitchesPressed = [ "SW1" ]
-		MaxDurationMs = 1000
+		MaxDurationMs = 300
 		LightsOff = ["LED1", "LED2"]
 	[[Action.Match]]
 		SwitchesPressed = [ "SW2" ]
-		MaxDurationMs = 1000
+		MaxDurationMs = 300
 		LightsOff = ["LED1", "LED2"]
 
 [[Action]]
