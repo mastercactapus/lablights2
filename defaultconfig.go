@@ -17,13 +17,13 @@ DebounceMs = 25
 [[Switch]]
 	Name = "SW3"
 	Pin = 7
-	# Uncomment to interpret pin `HIGH` state as switch being activated instead of `LOW` (the default)
+	# Uncomment to interpret pin "HIGH" state as switch being activated instead of "LOW" (the default)
 	# Invert = true
 
 [[Light]]
 	Name = "LED1"
 	Pin = 8
-	# Uncomment to output signal `LOW` when active instead of `HIGH`
+	# Uncomment to output signal "LOW" when active instead of "HIGH"
 	# Invert = true
 [[Light]]
 	Name = "LED2"
@@ -34,7 +34,7 @@ DebounceMs = 25
 
 [[Action]]
 	# toggle LED1 if SW1 was pressed for > 1s
-	Toggle = ["LED1"]
+	LightsToggle = ["LED1"]
 	[[Action.Match]]
 		SwitchesPressed = [ "SW1" ]
 		MinDurationMs = 1000
