@@ -41,6 +41,10 @@ func (c *Config) loop() {
 	s.Lights = make(map[string]bool, len(c.Light))
 	switchLastChanged := make(map[string]time.Time, len(c.Switch))
 
+	for _, l := range c.Light {
+		c.SetLight(l.Name, false)
+	}
+
 	t := time.NewTicker(time.Millisecond * 5)
 
 	var n time.Time
