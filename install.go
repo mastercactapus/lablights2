@@ -9,7 +9,6 @@ import (
 	"github.com/kardianos/osext"
 )
 
-const configPath = "/etc/lablights2.conf"
 const serviceFile = `
 [Unit]
 Description=LED Lighting Controller
@@ -38,7 +37,9 @@ func install(prefix string, reset bool) error {
 	}
 	defer src.Close()
 
-	dst, err := os.OpenFile(filepath.Join(prefix, "usr/bin/lablights2"), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
+	dstPath := filepath.Join(prefix, "usr/bin/lablights2")
+	os.MkdirAll(filepath.Dir(dstPath), 0755)
+	dst, err := os.OpenFile(dstPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
 	if err != nil {
 		return err
 	}
@@ -51,7 +52,9 @@ func install(prefix string, reset bool) error {
 	src.Close()
 	dst.Close()
 
-	dst, err = os.OpenFile(filepath.Join(prefix, "usr/lib/systemd/system/lablights2.service"), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	dstPath = filepath.Join(prefix, "usr/lib/systemd/system/lablights2.service")
+	os.MkdirAll(filepath.Dir(dstPath), 0755)
+	dst, err = os.OpenFile(dstPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		return err
 	}
@@ -63,14 +66,28 @@ func install(prefix string, reset bool) error {
 	}
 	dst.Close()
 
-	confFlags := os.O_WRONLY | os.O_CREATE
+	dstPath = filepath.Join(prefix, configPath)
+	_, err = os.Stat(dstPath)
+	if err == nil && !reset {
+		return nil
+	}
+
+	confFlags := os.O_CREATE | os.O_WRONLY
 	if reset {
 		confFlags |= os.O_TRUNC
 	}
-	dst, err = os.OpenFile(filepath.Join(prefix, "etc/lablights2.conf"), confFlags, 0644)
-	if err != nil && reset {
+
+	os.MkdirAll(filepath.Dir(dstPath), 0755)
+	dst, err = os.Create(dstPath)
+	if err != nil {
 		return err
 	}
+	defer dst.Close()
+	_, err = io.WriteString(dst, configFile)
+	if err != nil {
+		return err
+	}
+	dst.Close()
 
 	return nil
 }

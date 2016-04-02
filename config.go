@@ -6,92 +6,8 @@ import (
 	"time"
 
 	"github.com/hybridgroup/gobot/platforms/raspi"
+	log "github.com/sirupsen/logrus"
 )
-
-const configFile = `
-# NOTE: Pins are in reference to GPIO numbers
-
-# Debounce will ignore subsequent button state changes for a duration
-DebounceMs = 25
-
-[[Switch]]
-	Name = "SW1"
-	Pin = 14
-[[Switch]]
-	Name = "SW2"
-	Pin = 15
-[[Switch]]
-	Name = "SW3"
-	Pin = 16
-	# Uncomment to interpret pin "high" state as switch being activated instead of "low"
-	# Invert = true
-
-[[Light]]
-	Name = "LED1"
-	Pin = 17
-	# Uncomment to output signal "high" when active instead of "low"
-	# Invert = true
-[[Light]]
-	Name = "LED2"
-	Pin = 18
-[[Light]]
-	Name = "LED3"
-	Pin = 19
-
-[[Action]]
-	# toggle LED1 if SW1 was pressed for > 1s
-	Toggle = ["LED1"]
-	[[Action.Match]]
-		SwitchesPressed = [ "SW1" ]
-		MinDurationMs = 1000
-[[Action]]
-	# toggle LED2 if SW2 was pressed for > 1s
-	LightsToggle = ["LED2"]
-	[[Action.Match]]
-		SwitchesPressed = [ "SW2" ]
-		MinDurationMs = 1000
-[[Action]]
-	# turn off both LED1 and LED2 if either SW1 or SW2 was pressed < 1s and either LED1 or LED2 are on
-	LightsOff = ["LED1", "LED2"]
-	[[Action.Match]]
-		SwitchesPressed = [ "SW1" ]
-		MaxDurationMs = 1000
-		LightsOn = ["LED1"]
-	[[Action.Match]]
-		SwitchesPressed = [ "SW1" ]
-		MaxDurationMs = 1000
-		LightsOn = ["LED2"]
-	[[Action.Match]]
-		SwitchesPressed = [ "SW2" ]
-		MaxDurationMs = 1000
-		LightsOn = ["LED1"]
-	[[Action.Match]]
-		SwitchesPressed = [ "SW2" ]
-		MaxDurationMs = 1000
-		LightsOn = ["LED2"]
-[[Action]]
-	# turn on both LED1 and LED2 if either SW1 or SW2 was pressed < 1s and both LED1 or LED2 are off
-	LightsOn = ["LED1", "LED2"]
-	[[Action.Match]]
-		SwitchesPressed = [ "SW1" ]
-		MaxDurationMs = 1000
-		LightsOff = ["LED1", "LED2"]
-	[[Action.Match]]
-		SwitchesPressed = [ "SW2" ]
-		MaxDurationMs = 1000
-		LightsOff = ["LED1", "LED2"]
-
-[[Action]]
-	# turn LED3 on when SW3 is on
-	LightsOn = ["LED3"]
-	[[Action.Match]]
-		SwitchesOn = ["SW3"]
-[[Action]]
-	# turn LED3 on when SW3 is off
-	LightsOff = ["LED3"]
-	[[Action.Match]]
-		SwitchesOff = ["SW3"]
-`
 
 var adapter = raspi.NewRaspiAdaptor("raspi")
 var ErrInvalidName = errors.New("invalid name")
@@ -135,7 +51,7 @@ func (c *Config) loop() {
 			for _, sw := range c.Switch {
 				state, err := c.GetSwitch(sw.Name)
 				if err != nil {
-					panic(err)
+					log.Fatalf("read switch '%s'(Pin%d): %s", sw.Name, sw.Pin, err.Error())
 				}
 				s.SwitchesPressed[sw.Name] = 0
 				if state != s.Switches[sw.Name] {
@@ -146,11 +62,40 @@ func (c *Config) loop() {
 
 					s.Switches[sw.Name] = state
 					if !state {
+						log.WithFields(log.Fields{
+							"ID":       sw.Name,
+							"Pin":      sw.Pin,
+							"State":    state,
+							"Duration": duration.String(),
+						}).Infoln("switch released")
 						s.SwitchesPressed[sw.Name] = duration
+					} else {
+						log.WithFields(log.Fields{
+							"ID":    sw.Name,
+							"Pin":   sw.Pin,
+							"State": state,
+						}).Infoln("switch activated")
 					}
 					switchLastChanged[sw.Name] = n
 				}
 			}
+
+			for _, a := range c.Action {
+				var match bool
+				for _, m := range a.Match {
+					if m.Matches(s) {
+						match = true
+						break
+					}
+				}
+				if match {
+					err := c.Apply(s, a)
+					if err != nil {
+						log.Fatalln("apply action:", err)
+					}
+				}
+			}
+
 		}
 	}
 }
@@ -158,6 +103,16 @@ func (c *Config) loop() {
 func (c Config) SetLight(name string, state bool) error {
 	for _, l := range c.Light {
 		if l.Name == name {
+			lg := log.WithFields(log.Fields{
+				"ID":    l.Name,
+				"Pin":   l.Pin,
+				"State": state,
+			})
+			if state {
+				lg.Infoln("light on")
+			} else {
+				lg.Infoln("light off")
+			}
 			var val byte
 			if l.Invert != state {
 				// no invert and state true
@@ -182,7 +137,7 @@ func (c Config) GetSwitch(name string) (bool, error) {
 				return false, err
 			}
 
-			return (val == HIGH) != s.Invert, nil
+			return (val == LOW) != s.Invert, nil
 		}
 	}
 	return false, ErrInvalidName
@@ -197,24 +152,33 @@ func (c Config) Apply(s State, a Action) error {
 			if err != nil {
 				return err
 			}
+			s.Lights[name] = !s.Lights[name]
 		}
 	}
 
 	if a.LightsOn != nil {
 		for _, name = range a.LightsOn {
+			if s.Lights[name] {
+				continue
+			}
 			err = c.SetLight(name, true)
 			if err != nil {
 				return err
 			}
+			s.Lights[name] = true
 		}
 	}
 
 	if a.LightsOff != nil {
 		for _, name = range a.LightsOff {
+			if !s.Lights[name] {
+				continue
+			}
 			err = c.SetLight(name, false)
 			if err != nil {
 				return err
 			}
+			s.Lights[name] = false
 		}
 	}
 	return nil
@@ -277,7 +241,7 @@ func (a ActionMatcher) Matches(s State) bool {
 			if s.SwitchesPressed[id] < a.MinDuration() {
 				return false
 			}
-			if s.SwitchesPressed[id] > a.MaxDuration() {
+			if a.MaxDurationMs > 0 && s.SwitchesPressed[id] > a.MaxDuration() {
 				return false
 			}
 		}
