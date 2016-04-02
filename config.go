@@ -13,8 +13,8 @@ var adapter = raspi.NewRaspiAdaptor("raspi")
 var ErrInvalidName = errors.New("invalid name")
 
 const (
-	LOW  byte = 0
-	HIGH      = 1
+	LOW  = 0
+	HIGH = 1
 )
 
 type State struct {
@@ -41,7 +41,7 @@ func (c *Config) loop() {
 	s.Lights = make(map[string]bool, len(c.Light))
 	switchLastChanged := make(map[string]time.Time, len(c.Switch))
 
-	t := time.NewTicker(time.Millisecond)
+	t := time.NewTicker(time.Millisecond * 5)
 
 	for {
 		select {
@@ -80,22 +80,23 @@ func (c *Config) loop() {
 				}
 			}
 
+			// match actions first, so that state doesn't change while matching
+			toApply := make([]Action, 0, len(c.Action))
 			for _, a := range c.Action {
-				var match bool
 				for _, m := range a.Match {
 					if m.Matches(s) {
-						match = true
+						toApply = append(toApply, a)
 						break
-					}
-				}
-				if match {
-					err := c.Apply(s, a)
-					if err != nil {
-						log.Fatalln("apply action:", err)
 					}
 				}
 			}
 
+			for _, a := range toApply {
+				err := c.Apply(s, a)
+				if err != nil {
+					log.Fatalln("apply action:", err)
+				}
+			}
 		}
 	}
 }
