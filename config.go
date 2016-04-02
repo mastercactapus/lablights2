@@ -43,19 +43,30 @@ func (c *Config) loop() {
 
 	t := time.NewTicker(time.Millisecond * 5)
 
+	var n time.Time
+
+	var sw Switch
+	var state bool
+	var err error
+	var duration time.Duration
+
+	toApply := make([]Action, 0, len(c.Action))
+	var a Action
+	var m ActionMatcher
+
 	for {
 		select {
 		case <-t.C:
-			n := time.Now()
+			n = time.Now()
 
-			for _, sw := range c.Switch {
-				state, err := c.GetSwitch(sw.Name)
+			for _, sw = range c.Switch {
+				state, err = c.GetSwitch(sw.Name)
 				if err != nil {
 					log.Fatalf("read switch '%s'(Pin%d): %s", sw.Name, sw.Pin, err.Error())
 				}
 				s.SwitchesPressed[sw.Name] = 0
 				if state != s.Switches[sw.Name] {
-					duration := n.Sub(switchLastChanged[sw.Name])
+					duration = n.Sub(switchLastChanged[sw.Name])
 					if duration < c.Debounce() {
 						continue
 					}
@@ -81,9 +92,9 @@ func (c *Config) loop() {
 			}
 
 			// match actions first, so that state doesn't change while matching
-			toApply := make([]Action, 0, len(c.Action))
-			for _, a := range c.Action {
-				for _, m := range a.Match {
+			toApply = toApply[:0]
+			for _, a = range c.Action {
+				for _, m = range a.Match {
 					if m.Matches(s) {
 						toApply = append(toApply, a)
 						break
@@ -91,8 +102,8 @@ func (c *Config) loop() {
 				}
 			}
 
-			for _, a := range toApply {
-				err := c.Apply(s, a)
+			for _, a = range toApply {
+				err = c.Apply(s, a)
 				if err != nil {
 					log.Fatalln("apply action:", err)
 				}
